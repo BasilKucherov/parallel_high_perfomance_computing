@@ -1,12 +1,12 @@
 CXX = clang++
-CXXFLAGS = -std=c++11 -Wall -Wextra -O3 -g -fopenmp
+CXXFLAGS = -std=c++11 -Wall -Wextra -O3 -g -fopenmp -Iinclude
 GENERATES = run
 TRASH = *.o
 
 SRC_DIR = src
 UTILS_DIR = $(SRC_DIR)/utils
 BUILD_DIR = build
-SRCS = $(SRC_DIR)/main.cpp $(UTILS_DIR)/arg_parser.cpp $(UTILS_DIR)/utils.cpp
+SRCS = $(SRC_DIR)/main.cpp $(UTILS_DIR)/arg_parser.cpp $(UTILS_DIR)/utils.cpp $(SRC_DIR)/matrix_generator.cpp
 
 OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
 

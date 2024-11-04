@@ -2,13 +2,13 @@
 
 namespace utils {
 struct Arguments {
-  bool Help;
-  bool DebugOutput;
-  int Threads;
   int Nx;
   int Ny;
   int K1;
   int K2;
+  int Threads;
+  bool Help;
+  bool DebugOutput;
 };
 
 class ArgParser {

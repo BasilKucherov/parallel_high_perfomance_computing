@@ -1,4 +1,4 @@
-#include "arg_parser.hpp"
+#include "utils/arg_parser.hpp"
 
 #include <cstring>
 #include <stdexcept>
@@ -8,7 +8,7 @@ namespace utils {
 ArgParser::ArgParser(int argc, char *argv[]) : Argc_(argc), Argv_(argv) {}
 
 Arguments ArgParser::Parse() {
-  auto args = Arguments{false, false, 1, 0, 0, 0, 0};
+  auto args = Arguments{0, 0, 0, 0, 1, false, false};
   size_t PositionalArgsProcessedCount = 0;
 
   for (int i = 1; i < Argc_; ++i) {
@@ -48,5 +48,4 @@ Arguments ArgParser::Parse() {
 
   return args;
 }
-
 } // namespace utils

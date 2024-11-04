@@ -1,7 +1,9 @@
+#include "matrix_generator.hpp"
 #include "utils/arg_parser.hpp"
 #include "utils/utils.hpp"
 
 #include "omp.h"
+#include <chrono>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -42,21 +44,23 @@ int main(int argc, char *argv[]) {
 
   int N, *IA, *JA;
 
-  utils::GenerateMatrixCSR(args.Nx, args.Ny, args.K1, args.K2, IA, JA, N);
-  const auto portrait = utils::GetMatrixPortrait(IA, JA, N);
+  auto start = std::chrono::high_resolution_clock::now();
+  CSR::GenerateMatrixCSR(args.Nx, args.Ny, args.K1, args.K2, IA, JA, N);
+  auto finish = std::chrono::high_resolution_clock::now();
 
-  //   std::cout << "\n" << portrait << std::endl;
+  std::cout << "Time: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(finish -
+                                                                     start)
+                   .count()
+            << "ms" << std::endl;
 
-  //   std::cout << "\n\n";
-  //   for (int i = 0; i < N + 1; ++i) {
-  //     std::cout << std::setw(2) << IA[i] << " ";
-  //   }
+  std::cout << "N: " << N << std::endl;
+  std::cout << "IA[N]: " << IA[N] << std::endl;
 
-  //   std::cout << "\n";
-  //   for (int i = 0; i < IA[N]; ++i) {
-  //     std::cout << std::setw(2) << JA[i] << " ";
-  //   }
-  //   std::cout << "\n";
+  if (args.DebugOutput) {
+    const auto portrait = CSR::GetMatrixPortrait(IA, JA, N);
+    std::cout << "\n" << portrait << std::endl;
+  }
 
   return static_cast<int>(ErrorCode::OK);
 }
