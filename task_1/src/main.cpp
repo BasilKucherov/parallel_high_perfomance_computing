@@ -1,4 +1,6 @@
+#include "filler.hpp"
 #include "matrix_generator.hpp"
+#include "solver.hpp"
 #include "utils/arg_parser.hpp"
 #include "utils/utils.hpp"
 
@@ -44,23 +46,33 @@ int main(int argc, char *argv[]) {
 
   int N, *IA, *JA;
 
-  auto start = std::chrono::high_resolution_clock::now();
-  CSR::GenerateMatrixCSR(args.Nx, args.Ny, args.K1, args.K2, IA, JA, N);
-  auto finish = std::chrono::high_resolution_clock::now();
-
-  std::cout << "Time: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(finish -
-                                                                     start)
-                   .count()
-            << "ms" << std::endl;
+  auto startTime = omp_get_wtime();
+  NMathUtils::GenerateMatrixCSR(args.Nx, args.Ny, args.K1, args.K2, IA, JA, N);
+  auto finishTime = omp_get_wtime();
+  std::cout << "Generate time: " << finishTime - startTime << "s" << std::endl;
 
   std::cout << "N: " << N << std::endl;
   std::cout << "IA[N]: " << IA[N] << std::endl;
 
-  if (args.DebugOutput) {
-    const auto portrait = CSR::GetMatrixPortrait(IA, JA, N);
-    std::cout << "\n" << portrait << std::endl;
-  }
+  double *A, *B;
+  startTime = omp_get_wtime();
+  NMathUtils::FillMatrixCSR(N, IA, JA, A, B);
+  finishTime = omp_get_wtime();
+  std::cout << "Fill time: " << finishTime - startTime << "s" << std::endl;
+
+  double *X;
+  int Iter;
+  double Res;
+  startTime = omp_get_wtime();
+  MathUtils::Solve(N, IA, JA, A, B, 1e-4, 1000, X, Iter, Res, args.DebugOutput);
+  finishTime = omp_get_wtime();
+  std::cout << "Solve time: " << finishTime - startTime << "s" << std::endl;
+  std::cout << "Iter: " << Iter << std::endl;
+
+  delete[] IA;
+  delete[] JA;
+  delete[] A;
+  delete[] B;
 
   return static_cast<int>(ErrorCode::OK);
 }

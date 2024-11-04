@@ -68,8 +68,7 @@ inline int GetJAIndex(int index, int i, int j, int K1, int K2, int Nx, int Ny) {
 }
 } // namespace
 
-namespace CSR {
-
+namespace NMathUtils {
 std::string GetMatrixPortrait(const int *IA, const int *JA, int N) {
   std::stringstream ss;
   for (int i = 0; i < N; ++i) {
@@ -139,4 +138,4 @@ void GenerateMatrixCSR(int Nx, int Ny, int K1, int K2, int *&IA, int *&JA,
 
   IA[N] = connectionsCount;
 }
-} // namespace CSR
+} // namespace NMathUtils

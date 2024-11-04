@@ -21,6 +21,9 @@ Arguments ArgParser::Parse() {
         args.DebugOutput = true;
       } else if (std::strcmp(Argv_[i], "-t") == 0 ||
                  std::strcmp(Argv_[i], "--threads") == 0) {
+        if (i + 1 >= Argc_) {
+          throw std::invalid_argument("Threads flag requires an argument");
+        }
         args.Threads = std::strtol(Argv_[++i], nullptr, 10);
       } else {
         throw std::invalid_argument("Unknown flag: " + std::string(Argv_[i]));
