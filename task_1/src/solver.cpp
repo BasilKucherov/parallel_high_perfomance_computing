@@ -2,9 +2,11 @@
 
 #include <cmath>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
+#include <omp.h>
 
-namespace {
+namespace MathUtils {
 void AdamarsMult(int N, const double *X, const double *Y, double *Res) {
 #pragma omp for
   for (int i = 0; i < N; ++i) {
@@ -14,7 +16,7 @@ void AdamarsMult(int N, const double *X, const double *Y, double *Res) {
 
 void SpMV(int N, const int *IA, const int *JA, const double *A, const double *X,
           double *Res) {
-#pragma omp for
+#pragma omp parallel for
   for (int i = 0; i < N; ++i) {
     Res[i] = 0;
     for (int j = IA[i]; j < IA[i + 1]; ++j) {
@@ -24,29 +26,30 @@ void SpMV(int N, const int *IA, const int *JA, const double *A, const double *X,
 }
 
 void DotProduct(int N, const double *X, const double *Y, double &Res) {
-  double local_res = 0.0;
-
-#pragma omp for
+  Res = 0;
+#pragma omp parallel for reduction(+ : Res)
   for (int i = 0; i < N; ++i) {
-    local_res += X[i] * Y[i];
+    Res += X[i] * Y[i];
   }
-
-#pragma omp atomic
-  Res += local_res;
 }
 
 void Axpy(int N, double a, const double *X, const double *Y, double *Res) {
-#pragma omp for
+#pragma omp parallel for
   for (int i = 0; i < N; ++i) {
     Res[i] = a * X[i] + Y[i];
   }
 }
-} // namespace
-namespace MathUtils {
+
 void Solve(int N, const int *IA, const int *JA, const double *A,
            const double *B, double Eps, int MaxIter, double *&X, int &Iter,
            double &Res, bool Debug) {
-  X = new double[N];
+  double sumSpMVTime = 0;
+  int spMVCount = 0;
+  double sumDotProductTime = 0;
+  int dotProductCount = 0;
+  double sumAxpyTime = 0;
+  int axpyCount = 0;
+  double startTime;
 
   double *AInvDiag = new double[N];
 #pragma omp parallel for
@@ -58,6 +61,7 @@ void Solve(int N, const int *IA, const int *JA, const double *A,
     AInvDiag[i] = 1.0 / A[jIndex];
   }
 
+  X = new double[N];
   double *r = new double[N];
   double *p = new double[N];
   double *q = new double[N];
@@ -71,36 +75,43 @@ void Solve(int N, const int *IA, const int *JA, const double *A,
   std::memcpy(r, B, N * sizeof(double));
 
   Iter = 0;
-#pragma omp parallel
   do {
-#pragma omp barrier
     AdamarsMult(N, r, AInvDiag, z);
-    rho = 0;
-#pragma omp barrier
+
+    ++dotProductCount;
+    startTime = omp_get_wtime();
     DotProduct(N, r, z, rho);
+    sumDotProductTime += omp_get_wtime() - startTime;
 
     if (Iter == 0) {
       std::memcpy(p, z, N * sizeof(double));
     } else {
-#pragma omp barrier
       double beta = rho / rhoPrev;
-#pragma omp barrier
+      ++axpyCount;
+      startTime = omp_get_wtime();
       Axpy(N, beta, p, z, p);
+      sumAxpyTime += omp_get_wtime() - startTime;
     }
-#pragma omp barrier
+    ++spMVCount;
+    startTime = omp_get_wtime();
     SpMV(N, IA, JA, A, p, q);
+    sumSpMVTime += omp_get_wtime() - startTime;
 
-    alpha = 0;
-#pragma omp barrier
+    ++dotProductCount;
+    startTime = omp_get_wtime();
     DotProduct(N, p, q, alpha);
-#pragma omp barrier
+    sumDotProductTime += omp_get_wtime() - startTime;
 
     alpha = rho / alpha;
-#pragma omp barrier
+    ++axpyCount;
+    startTime = omp_get_wtime();
     Axpy(N, alpha, p, X, X);
-#pragma omp barrier
+    sumAxpyTime += omp_get_wtime() - startTime;
 
+    ++axpyCount;
+    startTime = omp_get_wtime();
     Axpy(N, -alpha, q, r, r);
+    sumAxpyTime += omp_get_wtime() - startTime;
 
     if (Debug) {
       SpMV(N, IA, JA, A, X, tmpVec);
@@ -117,6 +128,16 @@ void Solve(int N, const int *IA, const int *JA, const double *A,
 
     rhoPrev = rho;
   } while (rho > Eps * Eps && Iter++ < MaxIter);
+
+  std::cout << std::setprecision(3)
+            << "AVG/TOTAL SpMV:       " << sumSpMVTime / spMVCount << " / "
+            << sumSpMVTime << std::endl;
+  std::cout << std::setprecision(3)
+            << "AVG/TOTAL DotProduct: " << sumDotProductTime / dotProductCount
+            << " / " << sumDotProductTime << std::endl;
+  std::cout << std::setprecision(3)
+            << "AVG/TOTAL Axpy:       " << sumAxpyTime / axpyCount << " / "
+            << sumAxpyTime << std::endl;
 
   delete[] tmpVec;
   delete[] AInvDiag;

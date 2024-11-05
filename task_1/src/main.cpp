@@ -9,7 +9,6 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
-#include <optional>
 
 using utils::ErrorCode;
 
@@ -48,8 +47,8 @@ int main(int argc, char *argv[]) {
 
   auto startTime = omp_get_wtime();
   NMathUtils::GenerateMatrixCSR(args.Nx, args.Ny, args.K1, args.K2, IA, JA, N);
-  auto finishTime = omp_get_wtime();
-  std::cout << "Generate time: " << finishTime - startTime << "s" << std::endl;
+  auto generateTime = omp_get_wtime() - startTime;
+  std::cout << "Generate completed" << std::endl;
 
   std::cout << "N: " << N << std::endl;
   std::cout << "IA[N]: " << IA[N] << std::endl;
@@ -57,17 +56,21 @@ int main(int argc, char *argv[]) {
   double *A, *B;
   startTime = omp_get_wtime();
   NMathUtils::FillMatrixCSR(N, IA, JA, A, B);
-  finishTime = omp_get_wtime();
-  std::cout << "Fill time: " << finishTime - startTime << "s" << std::endl;
+  auto fillTime = omp_get_wtime() - startTime;
+  std::cout << "Fill completed" << std::endl;
 
   double *X;
   int Iter;
   double Res;
   startTime = omp_get_wtime();
   MathUtils::Solve(N, IA, JA, A, B, 1e-4, 1000, X, Iter, Res, args.DebugOutput);
-  finishTime = omp_get_wtime();
-  std::cout << "Solve time: " << finishTime - startTime << "s" << std::endl;
+  auto solveTime = omp_get_wtime() - startTime;
+  std::cout << "Solve completed" << std::endl;
   std::cout << "Iter: " << Iter << std::endl;
+
+  std::cout << "Generate time: " << generateTime << "s" << std::endl;
+  std::cout << "Fill time:     " << fillTime << "s" << std::endl;
+  std::cout << "Solve time:    " << solveTime << "s" << std::endl;
 
   delete[] IA;
   delete[] JA;
